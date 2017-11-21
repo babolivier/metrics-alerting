@@ -4,54 +4,25 @@ import (
 	"fmt"
 
 	"metrics-alerting/config"
-	"metrics-alerting/warp10"
+
+	"gopkg.in/gomail.v2"
 )
 
-func ProcessNumber(
-	client warp10.Warp10Client,
-	script config.Script,
-	ms config.MailSettings,
-) error {
-	value, err := client.ReadNumber(script.Script)
-	if err != nil {
-		return err
-	}
-
-	if value < script.Threshold {
-		// Nothing to alert about
-		return nil
-	}
-
-	return alert(script, value, ms)
+type Alerter struct {
+	Dialer *gomail.Dialer
+	Sender string
 }
 
-func ProcessBool(
-	client warp10.Warp10Client,
-	script config.Script,
-	ms config.MailSettings,
-) error {
-	value, err := client.ReadBool(script.Script)
-	if err != nil {
-		return err
-	}
-
-	if value {
-		return nil
-	}
-
-	return alert(script, value, ms)
-}
-
-func alert(
+func (a *Alerter) Alert(
 	script config.Script,
 	result interface{},
-	ms config.MailSettings,
+	labels map[string]string,
 ) error {
 	switch script.Action {
 	case "http":
-		return alertHttp(script, result)
+		return a.alertHttp(script, result, labels)
 	case "email":
-		return alertEmail(script, result, ms)
+		return a.alertEmail(script, result, labels)
 	default:
 		return fmt.Errorf("invalid action type: %s", script.Action)
 	}

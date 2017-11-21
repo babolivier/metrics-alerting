@@ -11,11 +11,16 @@ import (
 )
 
 type alertBody struct {
-	Key   string `json:"scriptKey"`
-	Value string `json:"value"`
+	Key    string            `json:"scriptKey"`
+	Value  string            `json:"value"`
+	Labels map[string]string `json:"labels"`
 }
 
-func alertHttp(script config.Script, result interface{}) error {
+func (a *Alerter) alertHttp(
+	script config.Script,
+	result interface{},
+	labels map[string]string,
+) error {
 	var value string
 	switch script.Type {
 	case "number":
@@ -25,8 +30,9 @@ func alertHttp(script config.Script, result interface{}) error {
 	}
 
 	alert := alertBody{
-		Key:   script.Key,
-		Value: value,
+		Key:    script.Key,
+		Value:  value,
+		Labels: labels,
 	}
 
 	body, err := json.Marshal(alert)

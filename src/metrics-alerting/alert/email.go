@@ -1,55 +1,79 @@
 package alert
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"metrics-alerting/config"
 
 	"gopkg.in/gomail.v2"
 )
 
-func alertEmail(
+func (a *Alerter) alertEmail(
 	script config.Script,
 	result interface{},
-	ms config.MailSettings,
+	labels map[string]string,
 ) error {
-	formatNumber := `
-Script %s just exceeded its threshold of %f and now returns %f
-
-Script:
-
-%s
-	`
-
-	formatBool := `
-Test for script %s and returned false instead of true
-
-Script:
-
-%s
-	`
+	formatNumber := "Script %s just exceeded its threshold of %.2f and now returns %f"
+	formatBool := "Test for script %s and returned false instead of true"
 
 	var body, subject string
 	switch script.Type {
-	case "number":
-		subject = fmt.Sprintf("Threshold exceeded for script %s", script.Key)
+	case "number", "series":
+		subject = fmt.Sprintf(
+			"Threshold exceeded for script %s %s", script.Key,
+			getIdentifyingLabels(script, labels),
+		)
 		body = fmt.Sprintf(
 			formatNumber, script.Key, script.Threshold, result.(float64),
-			script.Script,
 		)
 	case "bool":
-		subject = fmt.Sprintf("Test for script %s failed", script.Key)
-		body = fmt.Sprintf(formatBool, script.Key, script.Script)
+		subject = fmt.Sprintf(
+			"Test for script %s failed %s", script.Key,
+			getIdentifyingLabels(script, labels),
+		)
+		body = fmt.Sprintf(formatBool, script.Key)
 	}
 
+	if labels != nil {
+		jsonLabels, err := json.Marshal(labels)
+		if err != nil {
+			return err
+		}
+		body = fmt.Sprintf("%s\n\nLabels: %+v", body, string(jsonLabels))
+	}
+
+	body = fmt.Sprintf("%s\n\nScript:\n%s", body, script.Script)
+
 	m := gomail.NewMessage()
-	m.SetHeader("From", ms.Sender)
-	m.SetHeader("To", ms.Recipient)
+	m.SetHeader("From", a.Sender)
+	m.SetHeader("To", script.Target)
 	m.SetHeader("Subject", subject)
 	m.SetBody("text/plain", body)
 
-	d := gomail.NewDialer(
-		ms.SMTP.Host, ms.SMTP.Port, ms.SMTP.Username, ms.SMTP.Password,
-	)
-	return d.DialAndSend(m)
+	return a.Dialer.DialAndSend(m)
+}
+
+func getIdentifyingLabels(
+	script config.Script,
+	labels map[string]string,
+) string {
+	if len(script.IdentifyingLabels) == 0 {
+		return ""
+	}
+
+	identifyingLabels := make(map[string]string)
+	for _, label := range script.IdentifyingLabels {
+		identifyingLabels[label] = labels[label]
+	}
+
+	labelsAsStrs := []string{}
+	var labelAsStr string
+	for key, value := range identifyingLabels {
+		labelAsStr = key + ": " + value
+		labelsAsStrs = append(labelsAsStrs, labelAsStr)
+	}
+
+	return "(" + strings.Join(labelsAsStrs, ", ") + ")"
 }

@@ -6,9 +6,11 @@ import (
 
 	"metrics-alerting/alert"
 	"metrics-alerting/config"
+	"metrics-alerting/process"
 	"metrics-alerting/warp10"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/gomail.v2"
 )
 
 var (
@@ -23,15 +25,26 @@ func main() {
 		ExecEndpoint: cfg.Warp10Exec,
 		ReadToken:    cfg.ReadToken,
 	}
+	dialer := gomail.NewDialer(
+		cfg.Mail.SMTP.Host, cfg.Mail.SMTP.Port, cfg.Mail.SMTP.Username,
+		cfg.Mail.SMTP.Password,
+	)
+	alerter := alert.Alerter{
+		Dialer: dialer,
+		Sender: cfg.Mail.Sender,
+	}
 
 	for _, script := range cfg.Scripts {
 		var err error
 		switch script.Type {
 		case "number":
-			err = alert.ProcessNumber(client, script, cfg.Mail)
+			err = process.ProcessNumber(client, script, alerter)
 			break
 		case "bool":
-			err = alert.ProcessBool(client, script, cfg.Mail)
+			err = process.ProcessBool(client, script, alerter)
+			break
+		case "series":
+			err = process.ProcessSeries(client, script, alerter)
 			break
 		default:
 			err = fmt.Errorf("invalid return type: %s", script.Type)

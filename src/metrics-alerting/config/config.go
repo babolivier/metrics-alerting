@@ -9,8 +9,6 @@ import (
 type MailSettings struct {
 	// Sender of the alert emails
 	Sender string `yaml:"sender"`
-	// Recipient of the alert emails
-	Recipient string `yaml:"recipient"`
 	// Settings to connect to the mail server
 	SMTP SMTPSettings `yaml:"smtp"`
 }
@@ -40,6 +38,9 @@ type Script struct {
 	Action string `yaml:"action"`
 	// The action's target
 	Target string `yaml:"target"`
+	// The labels that will be mentioned in the email subject, only required if
+	// the action is "email"
+	IdentifyingLabels []string `yaml:"identifying_labels,omitempty"`
 }
 
 type Config struct {
