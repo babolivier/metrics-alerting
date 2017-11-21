@@ -3,7 +3,9 @@ package alert
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"metrics-alerting/config"
 )
@@ -14,9 +16,17 @@ type alertBody struct {
 }
 
 func alertHttp(script config.Script, result interface{}) error {
+	var value string
+	switch script.Type {
+	case "number":
+		value = strconv.FormatFloat(result.(float64), 'e', -1, 64)
+	case "bool":
+		value = strconv.FormatBool(result.(bool))
+	}
+
 	alert := alertBody{
 		Key:   script.Key,
-		Value: result,
+		Value: value,
 	}
 
 	body, err := json.Marshal(alert)
@@ -35,7 +45,7 @@ func alertHttp(script config.Script, result interface{}) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf(
-			"target %s returned non-200 status code %d", script.Target, resp.StatusCode
+			"target %s returned non-200 status code %d", script.Target, resp.StatusCode,
 		)
 	}
 
