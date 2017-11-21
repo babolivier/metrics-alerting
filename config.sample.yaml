@@ -1,0 +1,21 @@
+warp10_exec: http://localhost/api/v0/exec
+token: READ_TOKEN
+scripts:
+    -   key: "temperature"
+        script: "
+            NOW 'now' STORE
+            [
+                $token
+                'sensores.temperature'
+                { 'room' 'bedroom' }
+                $now
+                -1
+            ] FETCH
+            VALUES LIST-> DROP LIST-> DROP
+            "
+        # bool | number
+        type: number
+        # only required if type == number
+        threshold: 50
+        action: http
+        target: http://localhost:9996/alert
