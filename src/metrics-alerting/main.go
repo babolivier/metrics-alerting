@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 
 	"metrics-alerting/alert"
 	"metrics-alerting/config"
 	"metrics-alerting/warp10"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -37,7 +38,7 @@ func main() {
 		}
 
 		if err != nil {
-			log.Fatal(err)
+			logrus.Error(err)
 		}
 	}
 }
