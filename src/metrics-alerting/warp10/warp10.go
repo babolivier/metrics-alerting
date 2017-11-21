@@ -27,7 +27,7 @@ func (w *Warp10Client) ReadBool(script string) (b bool, err error) {
 	return
 }
 
-func (w *Warp10Client) ReadFloat(script string) (f float64, err error) {
+func (w *Warp10Client) ReadNumber(script string) (f float64, err error) {
 	resp, err := w.sendRequest(script)
 	if err != nil {
 		return
