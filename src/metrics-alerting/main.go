@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 
+	"metrics-alerting/alert"
 	"metrics-alerting/config"
 	"metrics-alerting/warp10"
 )
@@ -22,5 +24,20 @@ func main() {
 	}
 
 	for _, script := range cfg.Scripts {
+		var err error
+		switch script.Type {
+		case "number":
+			err = alert.ProcessNumber(client, script)
+			break
+		case "bool":
+			err = alert.ProcessBool(client, script)
+			break
+		default:
+			err = fmt.Errorf("invalid return type: %s", script.Type)
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }

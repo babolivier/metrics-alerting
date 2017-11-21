@@ -14,7 +14,7 @@ type Script struct {
 	// The type of the value returned by the script
 	Type string `yaml:"type"`
 	// Value above which an action is required
-	Threshold string `yaml:"threshold,omitempty"`
+	Threshold float64 `yaml:"threshold,omitempty"`
 	// The action to take (either "http" or "email")
 	Action string `yaml:"action"`
 	// The action's target
