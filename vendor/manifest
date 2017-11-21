@@ -2,6 +2,32 @@
 	"version": 0,
 	"dependencies": [
 		{
+			"importpath": "github.com/sirupsen/logrus",
+			"repository": "https://github.com/sirupsen/logrus",
+			"revision": "95cd2b9c79aa5e72ab0bc69b7ccc2be15bf850f6",
+			"branch": "master"
+		},
+		{
+			"importpath": "golang.org/x/crypto/ssh/terminal",
+			"repository": "https://go.googlesource.com/crypto",
+			"revision": "9f005a07e0d31d45e6656d241bb5c0f2efd4bc94",
+			"branch": "master",
+			"path": "/ssh/terminal"
+		},
+		{
+			"importpath": "golang.org/x/sys/unix",
+			"repository": "https://go.googlesource.com/sys",
+			"revision": "328643532ee3c60c099171d4ce2cad0ca0354ca9",
+			"branch": "master",
+			"path": "/unix"
+		},
+		{
+			"importpath": "gopkg.in/gomail.v2",
+			"repository": "https://gopkg.in/gomail.v2",
+			"revision": "81ebce5c23dfd25c6c67194b37d3dd3f338c98b1",
+			"branch": "v2"
+		},
+		{
 			"importpath": "gopkg.in/yaml.v2",
 			"repository": "https://gopkg.in/yaml.v2",
 			"revision": "287cf08546ab5e7e37d55a84f7ed3fd1db036de5",

@@ -6,6 +6,26 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type MailSettings struct {
+	// Sender of the alert emails
+	Sender string `yaml:"sender"`
+	// Recipient of the alert emails
+	Recipient string `yaml:"recipient"`
+	// Settings to connect to the mail server
+	SMTP SMTPSettings `yaml:"smtp"`
+}
+
+type SMTPSettings struct {
+	// Host of the mail server
+	Host string `yaml:"host"`
+	// Port of the mail server
+	Port int `yaml:"port"`
+	// Username used to authenticate on the mail server
+	Username string `yaml:"username"`
+	// Password used to authenticate on the mail server
+	Password string `yaml:"password"`
+}
+
 type Script struct {
 	// An identifying key for the script
 	Key string `yaml:"key"`
@@ -13,7 +33,8 @@ type Script struct {
 	Script string `yaml:"script"`
 	// The type of the value returned by the script
 	Type string `yaml:"type"`
-	// Value above which an action is required
+	// Value above which an action is required, only required if the type is
+	// "number"
 	Threshold float64 `yaml:"threshold,omitempty"`
 	// The action to take (either "http" or "email")
 	Action string `yaml:"action"`
@@ -22,6 +43,9 @@ type Script struct {
 }
 
 type Config struct {
+	// Settings to send email alerts, only required if the action of at least 1
+	// script is "email"
+	Mail MailSettings `yaml:"mail,omitempty"`
 	// Full URL to Warp10's /exec
 	Warp10Exec string `yaml:"warp10_exec"`
 	// Warp10 read token

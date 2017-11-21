@@ -1,3 +1,11 @@
+mail:
+    sender: foo@bar.baz
+    recipient: admin@bar.baz
+    smtp:
+        host: smtp.bar.baz
+        port: 465
+        username: foo@bar.baz
+        password: hackme
 warp10_exec: http://localhost/api/v0/exec
 token: READ_TOKEN
 scripts:
@@ -13,9 +21,7 @@ scripts:
             ] FETCH
             VALUES LIST-> DROP LIST-> DROP
             "
-        # bool | number
         type: number
-        # only required if type == number
         threshold: 50
         action: http
         target: http://localhost:9996/alert

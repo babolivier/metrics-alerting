@@ -28,10 +28,10 @@ func main() {
 		var err error
 		switch script.Type {
 		case "number":
-			err = alert.ProcessNumber(client, script)
+			err = alert.ProcessNumber(client, script, cfg.Mail)
 			break
 		case "bool":
-			err = alert.ProcessBool(client, script)
+			err = alert.ProcessBool(client, script, cfg.Mail)
 			break
 		default:
 			err = fmt.Errorf("invalid return type: %s", script.Type)
