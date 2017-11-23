@@ -138,6 +138,10 @@ func processFloat(
 	labels map[string]string,
 	data script_data.Data,
 ) error {
+	if script.Threshold == 0 {
+		return fmt.Errorf("no threshold provided for number value")
+	}
+
 	if value < script.Threshold {
 		// Nothing to alert about
 		return nil
