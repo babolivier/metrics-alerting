@@ -112,7 +112,10 @@ func (cfg *Config) loadData() error {
 					break
 				}
 
-				script.ScriptData[key] = append(script.ScriptData[key], line)
+				// Prevent processing empty line at the end of file
+				if len(line) > 0 {
+					script.ScriptData[key] = append(script.ScriptData[key], line)
+				}
 			}
 		}
 		for key, slice := range script.DataSource.Plain {
