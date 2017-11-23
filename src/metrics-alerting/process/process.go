@@ -18,30 +18,33 @@ func Process(
 ) error {
 	var scriptData script_data.Data
 	// TODO: Process more than one dataset
-	for key, data := range script.ScriptData {
-		scriptData.Key = key
-		r, err := regexp.Compile("`" + key + "`")
-		if err != nil {
-			return err
-		}
-		match := r.Find([]byte(script.Script))
-		if len(match) == 0 {
-			return fmt.Errorf("no variable named %s in script %s", key, script.Key)
-		}
-
-		origScript := script.Script
-
-		for _, el := range data {
-			scriptData.Value = el
-			filledScript := r.ReplaceAll([]byte(origScript), []byte(el))
-			script.Script = string(filledScript)
-			if err = dispatchType(client, script, alerter, scriptData); err != nil {
+	if len(script.ScriptData) > 0 {
+		for key, data := range script.ScriptData {
+			scriptData.Key = key
+			r, err := regexp.Compile("`" + key + "`")
+			if err != nil {
 				return err
 			}
-		}
-	}
+			match := r.Find([]byte(script.Script))
+			if len(match) == 0 {
+				return fmt.Errorf("no variable named %s in script %s", key, script.Key)
+			}
 
-	return nil
+			origScript := script.Script
+
+			for _, el := range data {
+				scriptData.Value = el
+				filledScript := r.ReplaceAll([]byte(origScript), []byte(el))
+				script.Script = string(filledScript)
+				if err = dispatchType(client, script, alerter, scriptData); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	} else {
+		return dispatchType(client, script, alerter, nil)
+	}
 }
 
 func dispatchType(
