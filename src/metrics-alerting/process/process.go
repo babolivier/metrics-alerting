@@ -43,7 +43,7 @@ func Process(
 		}
 		return nil
 	} else {
-		return dispatchType(client, script, alerter, nil)
+		return dispatchType(client, script, alerter, script_data.Data{})
 	}
 }
 
