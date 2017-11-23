@@ -2,6 +2,7 @@ package config
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -28,11 +29,13 @@ type SMTPSettings struct {
 }
 
 type ScriptDataSource struct {
-	// Data to load from a file containing the content for the slide, one
-	// element per line
-	FromFile map[string]string `yaml:"from_file,omitempty"`
-	// Plain data
-	Plain map[string][]string `yaml:"plain,omitempty"`
+	// Type of the data source (either "plain" or "file")
+	Source string `yaml:"source"`
+	// Key of the data
+	Key string `yaml:"key"`
+	// Data value (or 1-element slice containing the path to the file containing
+	// the values)
+	Value []string `yaml:"value"`
 }
 
 type Script struct {
@@ -52,8 +55,8 @@ type Script struct {
 	// The labels that will be mentioned in the email subject, only required if
 	// the action is "email"
 	IdentifyingLabels []string `yaml:"identifying_labels,omitempty"`
-	// Data to use in the script
-	DataSource ScriptDataSource `yaml:"script_data,omitempty"`
+	// Source/value of the data to use in the script
+	ScriptDataSource ScriptDataSource `yaml:"script_data,omitempty"`
 	// Loaded data
 	ScriptData map[string][]string
 }
@@ -90,8 +93,9 @@ func (cfg *Config) loadData() error {
 	var isPrefix bool
 	for i, script := range cfg.Scripts {
 		script.ScriptData = make(map[string][]string)
-		for key, fileName := range script.DataSource.FromFile {
-			fp, err := os.Open(fileName)
+		switch script.ScriptDataSource.Source {
+		case "file":
+			fp, err := os.Open(script.ScriptDataSource.Value[0])
 			if err != nil {
 				return err
 			}
@@ -114,12 +118,17 @@ func (cfg *Config) loadData() error {
 
 				// Prevent processing empty line at the end of file
 				if len(line) > 0 {
-					script.ScriptData[key] = append(script.ScriptData[key], line)
+					script.ScriptData[script.ScriptDataSource.Key] = append(
+						script.ScriptData[script.ScriptDataSource.Key], line,
+					)
 				}
 			}
-		}
-		for key, slice := range script.DataSource.Plain {
-			script.ScriptData[key] = slice
+			break
+		case "plain":
+			script.ScriptData[script.ScriptDataSource.Key] = script.ScriptDataSource.Value
+			break
+		default:
+			return fmt.Errorf("invalid data source: %s")
 		}
 
 		cfg.Scripts[i] = script
