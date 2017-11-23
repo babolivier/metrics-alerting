@@ -27,16 +27,27 @@ func main() {
 		ExecEndpoint: cfg.Warp10Exec,
 		ReadToken:    cfg.ReadToken,
 	}
-	dialer := gomail.NewDialer(
-		cfg.Mail.SMTP.Host, cfg.Mail.SMTP.Port, cfg.Mail.SMTP.Username,
-		cfg.Mail.SMTP.Password,
-	)
 	alerter := alert.Alerter{
-		Dialer: dialer,
+		Dialer: nil,
 		Sender: cfg.Mail.Sender,
 	}
 
 	for _, script := range cfg.Scripts {
+		if script.Action == "email" && alerter.Dialer == nil {
+			if cfg.Mail == nil {
+				logrus.Errorf(
+					"no configuration set for sending emails, ignoring script %s",
+					script.Key,
+				)
+				continue
+			}
+
+			alerter.Dialer = gomail.NewDialer(
+				cfg.Mail.SMTP.Host, cfg.Mail.SMTP.Port, cfg.Mail.SMTP.Username,
+				cfg.Mail.SMTP.Password,
+			)
+		}
+
 		if err := process.Process(client, script, alerter); err != nil {
 			logrus.Error(err)
 		}
