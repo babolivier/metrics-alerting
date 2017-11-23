@@ -6,6 +6,7 @@ import (
 	"metrics-alerting/config"
 	"metrics-alerting/script_data"
 
+	"github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
 )
 
@@ -20,6 +21,12 @@ func (a *Alerter) Alert(
 	labels map[string]string,
 	data script_data.Data,
 ) error {
+	alertLog := fmt.Sprintf("Test for script \"%s\" failed", script.Key)
+	if len(data.Key) > 0 {
+		alertLog = alertLog + fmt.Sprintf(" (data: %s=%s)", data.Key, data.Value)
+	}
+	logrus.Info(alertLog)
+
 	switch script.Action {
 	case "http":
 		return a.alertHttp(script, result, labels, data)
