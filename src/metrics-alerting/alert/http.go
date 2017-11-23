@@ -8,18 +8,21 @@ import (
 	"strconv"
 
 	"metrics-alerting/config"
+	"metrics-alerting/script_data"
 )
 
 type alertBody struct {
 	Key    string            `json:"scriptKey"`
 	Value  string            `json:"value"`
 	Labels map[string]string `json:"labels"`
+	Data   map[string]string `json:"data"`
 }
 
 func (a *Alerter) alertHttp(
 	script config.Script,
 	result interface{},
 	labels map[string]string,
+	data script_data.Data,
 ) error {
 	var value string
 	switch script.Type {
@@ -29,10 +32,14 @@ func (a *Alerter) alertHttp(
 		value = strconv.FormatBool(result.(bool))
 	}
 
+	returnData := make(map[string]string)
+	returnData[data.Key] = data.Value
+
 	alert := alertBody{
 		Key:    script.Key,
 		Value:  value,
 		Labels: labels,
+		Data:   returnData,
 	}
 
 	body, err := json.Marshal(alert)

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"metrics-alerting/config"
+	"metrics-alerting/script_data"
 
 	"gopkg.in/gomail.v2"
 )
@@ -14,24 +15,25 @@ func (a *Alerter) alertEmail(
 	script config.Script,
 	result interface{},
 	labels map[string]string,
+	data script_data.Data,
 ) error {
-	formatNumber := "Script %s just exceeded its threshold of %.2f and now returns %f"
-	formatBool := "Test for script %s and returned false instead of true"
+	formatNumber := "Script \"%s\" just exceeded its threshold of %.2f and now returns %f"
+	formatBool := "Test for script \"%s\" failed and returned false instead of true"
 
 	var body, subject string
 	switch script.Type {
 	case "number", "series":
 		subject = fmt.Sprintf(
-			"Threshold exceeded for script %s %s", script.Key,
-			getIdentifyingLabels(script, labels),
+			"Threshold exceeded for script \"%s\" %s%s", script.Key,
+			getIdentifyingLabels(script, labels), getScriptData(data),
 		)
 		body = fmt.Sprintf(
 			formatNumber, script.Key, script.Threshold, result.(float64),
 		)
 	case "bool":
 		subject = fmt.Sprintf(
-			"Test for script %s failed %s", script.Key,
-			getIdentifyingLabels(script, labels),
+			"Test for script \"%s\" failed %s%s", script.Key,
+			getIdentifyingLabels(script, labels), getScriptData(data),
 		)
 		body = fmt.Sprintf(formatBool, script.Key)
 	}
@@ -65,7 +67,9 @@ func getIdentifyingLabels(
 
 	identifyingLabels := make(map[string]string)
 	for _, label := range script.IdentifyingLabels {
-		identifyingLabels[label] = labels[label]
+		if len(labels[label]) > 0 {
+			identifyingLabels[label] = labels[label]
+		}
 	}
 
 	labelsAsStrs := []string{}
@@ -76,4 +80,12 @@ func getIdentifyingLabels(
 	}
 
 	return "(" + strings.Join(labelsAsStrs, ", ") + ")"
+}
+
+func getScriptData(data script_data.Data) string {
+	if len(data.Key) == 0 {
+		return ""
+	}
+
+	return "(" + data.Key + "=" + data.Value + ")"
 }

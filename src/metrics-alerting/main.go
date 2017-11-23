@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 
 	"metrics-alerting/alert"
 	"metrics-alerting/config"
@@ -20,7 +19,10 @@ var (
 func main() {
 	flag.Parse()
 
-	cfg, _ := config.Load(*configPath)
+	cfg := config.Config{}
+	if err := cfg.Load(*configPath); err != nil {
+		logrus.Panic(err)
+	}
 	client := warp10.Warp10Client{
 		ExecEndpoint: cfg.Warp10Exec,
 		ReadToken:    cfg.ReadToken,
@@ -35,22 +37,7 @@ func main() {
 	}
 
 	for _, script := range cfg.Scripts {
-		var err error
-		switch script.Type {
-		case "number":
-			err = process.ProcessNumber(client, script, alerter)
-			break
-		case "bool":
-			err = process.ProcessBool(client, script, alerter)
-			break
-		case "series":
-			err = process.ProcessSeries(client, script, alerter)
-			break
-		default:
-			err = fmt.Errorf("invalid return type: %s", script.Type)
-		}
-
-		if err != nil {
+		if err := process.Process(client, script, alerter); err != nil {
 			logrus.Error(err)
 		}
 	}

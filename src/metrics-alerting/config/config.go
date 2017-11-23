@@ -1,7 +1,10 @@
 package config
 
 import (
+	"bufio"
+	"io"
 	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v2"
 )
@@ -24,6 +27,14 @@ type SMTPSettings struct {
 	Password string `yaml:"password"`
 }
 
+type ScriptDataSource struct {
+	// Data to load from a file containing the content for the slide, one
+	// element per line
+	FromFile map[string]string `yaml:"from_file,omitempty"`
+	// Plain data
+	Plain map[string][]string `yaml:"plain,omitempty"`
+}
+
 type Script struct {
 	// An identifying key for the script
 	Key string `yaml:"key"`
@@ -41,6 +52,10 @@ type Script struct {
 	// The labels that will be mentioned in the email subject, only required if
 	// the action is "email"
 	IdentifyingLabels []string `yaml:"identifying_labels,omitempty"`
+	// Data to use in the script
+	DataSource ScriptDataSource `yaml:"script_data,omitempty"`
+	// Loaded data
+	ScriptData map[string][]string
 }
 
 type Config struct {
@@ -55,12 +70,57 @@ type Config struct {
 	Scripts []Script `yaml:"scripts"`
 }
 
-func Load(filePath string) (cfg Config, err error) {
+func (cfg *Config) Load(filePath string) (err error) {
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return
 	}
 
 	err = yaml.Unmarshal(content, &cfg)
-	return
+	if err != nil {
+		return
+	}
+
+	return cfg.loadData()
+}
+
+func (cfg *Config) loadData() error {
+	var line string
+	var l []byte
+	var isPrefix bool
+	for i, script := range cfg.Scripts {
+		script.ScriptData = make(map[string][]string)
+		for key, fileName := range script.DataSource.FromFile {
+			fp, err := os.Open(fileName)
+			if err != nil {
+				return err
+			}
+			reader := bufio.NewReader(fp)
+
+			for true {
+				isPrefix = true
+				line = ""
+				for isPrefix {
+					l, isPrefix, err = reader.ReadLine()
+					if err != nil && err != io.EOF {
+						return err
+					}
+					line = line + string(l)
+				}
+
+				if err == io.EOF {
+					break
+				}
+
+				script.ScriptData[key] = append(script.ScriptData[key], line)
+			}
+		}
+		for key, slice := range script.DataSource.Plain {
+			script.ScriptData[key] = slice
+		}
+
+		cfg.Scripts[i] = script
+	}
+
+	return nil
 }

@@ -1,30 +1,85 @@
 package process
 
 import (
+	"fmt"
+	"regexp"
 	"time"
 
 	"metrics-alerting/alert"
 	"metrics-alerting/config"
+	"metrics-alerting/script_data"
 	"metrics-alerting/warp10"
 )
 
-func ProcessNumber(
+func Process(
 	client warp10.Warp10Client,
 	script config.Script,
 	alerter alert.Alerter,
+) error {
+	var scriptData script_data.Data
+	// TODO: Process more than one dataset
+	for key, data := range script.ScriptData {
+		scriptData.Key = key
+		r, err := regexp.Compile("`" + key + "`")
+		if err != nil {
+			return err
+		}
+		match := r.Find([]byte(script.Script))
+		if len(match) == 0 {
+			return fmt.Errorf("no variable named %s in script %s", key, script.Key)
+		}
+
+		origScript := script.Script
+
+		for _, el := range data {
+			scriptData.Value = el
+			filledScript := r.ReplaceAll([]byte(origScript), []byte(el))
+			script.Script = string(filledScript)
+			if err = dispatchType(client, script, alerter, scriptData); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func dispatchType(
+	client warp10.Warp10Client,
+	script config.Script,
+	alerter alert.Alerter,
+	data script_data.Data,
+) error {
+	switch script.Type {
+	case "number":
+		return processNumber(client, script, alerter, data)
+	case "bool":
+		return processBool(client, script, alerter, data)
+	case "series":
+		return processSeries(client, script, alerter, data)
+	}
+	return fmt.Errorf("invalid return type: %s", script.Type)
+}
+
+func processNumber(
+	client warp10.Warp10Client,
+	script config.Script,
+	alerter alert.Alerter,
+	data script_data.Data,
 ) error {
 	value, err := client.ReadNumber(script.Script)
 	if err != nil {
 		return err
 	}
 
-	return processFloat(value, script, alerter, nil)
+	return processFloat(value, script, alerter, nil, data)
 }
 
-func ProcessBool(
+func processBool(
 	client warp10.Warp10Client,
 	script config.Script,
 	alerter alert.Alerter,
+	data script_data.Data,
 ) error {
 	value, err := client.ReadBool(script.Script)
 	if err != nil {
@@ -35,13 +90,14 @@ func ProcessBool(
 		return nil
 	}
 
-	return alerter.Alert(script, value, nil)
+	return alerter.Alert(script, value, nil, data)
 }
 
-func ProcessSeries(
+func processSeries(
 	client warp10.Warp10Client,
 	script config.Script,
 	alerter alert.Alerter,
+	data script_data.Data,
 ) error {
 	series, err := client.ReadSeriesOfNumbers(script.Script)
 
@@ -63,7 +119,7 @@ func ProcessSeries(
 		// to find when the situation began so we can add info about time in the
 		// alert.
 		if err = processFloat(
-			serie.Datapoints[0][1], script, alerter, serie.Labels,
+			serie.Datapoints[0][1], script, alerter, serie.Labels, data,
 		); err != nil {
 			return err
 		}
@@ -77,13 +133,14 @@ func processFloat(
 	script config.Script,
 	alerter alert.Alerter,
 	labels map[string]string,
+	data script_data.Data,
 ) error {
 	if value < script.Threshold {
 		// Nothing to alert about
 		return nil
 	}
 
-	return alerter.Alert(script, value, labels)
+	return alerter.Alert(script, value, labels, data)
 }
 
 func isRecentEnough(datapoint []float64) bool {
