@@ -21,11 +21,7 @@ func (a *Alerter) Alert(
 	labels map[string]string,
 	data script_data.Data,
 ) error {
-	alertLog := fmt.Sprintf("Test for script \"%s\" failed", script.Key)
-	if len(data.Key) > 0 {
-		alertLog = alertLog + fmt.Sprintf(" (data: %s=%s)", data.Key, data.Value)
-	}
-	logrus.Info(alertLog)
+	logFailure(script, data)
 
 	switch script.Action {
 	case "http":
@@ -35,4 +31,15 @@ func (a *Alerter) Alert(
 	default:
 		return fmt.Errorf("invalid action type: %s", script.Action)
 	}
+}
+
+func logFailure(script config.Script, data script_data.Data) {
+	var entry *logrus.Entry
+	if len(data.Key) > 0 {
+		entry = logrus.WithField(data.Key, data.Value)
+	} else {
+		entry = logrus.NewEntry(logrus.New())
+	}
+
+	entry.Infof("Test for script \"%s\" failed", script.Key)
 }
