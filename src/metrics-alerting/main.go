@@ -14,10 +14,15 @@ import (
 
 var (
 	configPath = flag.String("config", "config.yaml", "The path to the config file. For more information, see the config file in this repository.")
+	logFile    = flag.String("log-file", "", "The path to the file logs should be directed to. If empty or not provided, logs will be output through standard output.")
 )
 
 func main() {
 	flag.Parse()
+
+	if err := logConfig(); err != nil {
+		logrus.Warn(err)
+	}
 
 	cfg := config.Config{}
 	if err := cfg.Load(*configPath); err != nil {
