@@ -19,7 +19,7 @@ func logConfig() error {
 	var disableColors = false
 
 	if len(*logFile) > 0 {
-		f, err := os.OpenFile(*logFile, os.O_WRONLY|os.O_CREATE, 0755)
+		f, err := os.OpenFile(*logFile, os.O_WRONLY|os.O_CREATE, 0655)
 		if err != nil {
 			return err
 		}
