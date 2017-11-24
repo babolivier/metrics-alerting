@@ -103,9 +103,9 @@ func processSeries(
 	data script_data.Data,
 ) error {
 	series, err := client.ReadSeriesOfNumbers(script.Script)
-
 	for _, serie := range series {
-		if !isRecentEnough(serie.Datapoints[0]) {
+		mostRecentDataPoint := serie.Datapoints[len(serie.Datapoints)-1]
+		if !isRecentEnough(mostRecentDataPoint) {
 			// If the serie hasn't been active in the last 10min, don't consider
 			// it
 			// TODO: If the serie was active at the previous run, send an alert
@@ -122,7 +122,7 @@ func processSeries(
 		// to find when the situation began so we can add info about time in the
 		// alert.
 		if err = processFloat(
-			serie.Datapoints[0][1], script, alerter, serie.Labels, data,
+			mostRecentDataPoint[1], script, alerter, serie.Labels, data,
 		); err != nil {
 			return err
 		}
@@ -157,5 +157,4 @@ func isRecentEnough(datapoint []float64) bool {
 	now := time.Now().UnixNano() / 1000 // Current timestamp (seconds)
 
 	return now-int64(datapoint[0]) <= allowedOffset
-	return false
 }
