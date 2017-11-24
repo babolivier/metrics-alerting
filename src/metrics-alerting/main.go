@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 
 	"metrics-alerting/alert"
@@ -51,6 +52,11 @@ func main() {
 				cfg.Mail.SMTP.Host, cfg.Mail.SMTP.Port, cfg.Mail.SMTP.Username,
 				cfg.Mail.SMTP.Password,
 			)
+
+			// Skip verification for localhost
+			if cfg.Mail.SMTP.Host == "127.0.0.1" {
+				alerter.Dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+			}
 		}
 
 		if err := process.Process(client, script, alerter); err != nil {
