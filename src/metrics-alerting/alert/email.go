@@ -43,7 +43,17 @@ func (a *Alerter) alertEmail(
 		if err != nil {
 			return err
 		}
-		body = fmt.Sprintf("%s\n\nLabels: %+v", body, string(jsonLabels))
+		body = fmt.Sprintf("%s\n\nLabels: %s", body, string(jsonLabels))
+	}
+
+	if len(data.Key) > 0 {
+		dataMap := make(map[string]string)
+		dataMap[data.Key] = data.Value
+		jsonData, err := json.Marshal(dataMap)
+		if err != nil {
+			return err
+		}
+		body = fmt.Sprintf("%s\n\nData: %s", body, string(jsonData))
 	}
 
 	body = fmt.Sprintf("%s\n\nScript:\n%s", body, script.Script)
